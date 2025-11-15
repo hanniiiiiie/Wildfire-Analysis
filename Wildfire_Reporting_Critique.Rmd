@@ -1,0 +1,307 @@
+---
+title: "A Statistical Critique of Wildfire Reporting in Canadian Media"
+author: "Hanniel Kouame 300 322 055"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: false
+    number_sections: true
+bibliography: references.bib
+csl: apa.csl
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, 
+                      fig.width = 7, fig.height = 4, dpi = 300)
+
+# Load required packages
+library(tidyverse)
+library(Kendall)
+library(trend)
+library(FSA)
+library(knitr)
+library(gridExtra)
+
+# Set theme for all plots
+theme_set(theme_minimal(base_size = 11) +
+          theme(plot.title = element_text(face = "bold", size = 11),
+                axis.title = element_text(size = 10)))
+```
+
+# INTRODUCTION
+
+## Background
+
+During summer 2023, Canada experienced its most severe wildfire season on record, with over 18 million hectares burned, an area roughly the size of Missouri. Smoke blanketed much of North America, forcing millions indoors and contributing to excess deaths across the continent. The 2024 season, while less extreme, still ranked among the worst on record with over 5 million hectares burned.
+
+These consecutive extreme fire seasons intensified public debate about climate change and wildfire trends. However, several prominent opinion columnists challenged the narrative that wildfires are increasing, arguing instead that media coverage was exaggerated or that climate change plays a minimal role. These opinion pieces made specific, testable statistical claims about fire trends, claims that deserves empirical examination.
+
+## Objectives
+
+This analysis evaluates the validity of quantitative claims made in three opinion articles published in Canadian newspapers following the 2023 fire season. Using publicly available datasets and robust statistical methods, I test whether the specific assertions about wildfire trends are supported by empirical evidence. The research questions are:
+
+1. **Denley (Ottawa Citizen, 2023):** Have Canadian fire frequency and area burned declined since 1989-1995? Do temperature and fire activity move in opposite directions?
+
+2. **Sankey (National Post, 2023):** Has the proportion of human-caused fires been increasing, potentially explaining recent fire trends independent of climate factors?
+
+3. **Lomborg (National Post, 2024):** Are global fire trends declining when viewed in appropriate temporal context, and are North American increases offset by decreases elsewhere?
+
+This project focuses on evaluating whether reporting about fire trends is justified by available data, not on attributing causation to specific factors. Formal attribution of fire trends to anthropogenic climate change requires climate model experiments beyond the scope of this analysis [@kirchmeier2019].
+
+# METHODS
+
+## Data Sources
+
+**Canadian National Fire Database (CNFDB):** The official government database maintained by Natural Resources Canada contains annual fire records from 1990-2023, including fire counts, area burned, ignition cause, and fire size categories. Data accessed at http://nfdp.ccfm.org/en/data/fires.php.
+
+**Global Wildfire Information System (GWIS):** Satellite-derived (MODIS) global burned area data from 2002-2023, providing annual totals and regional breakdowns for 13 world regions. Data accessed at https://gwis.jrc.ec.europa.eu/apps/gwis.statistics/seasonaltrend.
+
+**Berkeley Earth Surface Temperature:** Quality-controlled land surface temperature dataset providing annual mean temperatures for Canada from 1990-2020. Data accessed at http://berkeleyearth.org/data/.
+
+## Data Processing
+
+The CNFDB provides fire data aggregated by jurisdiction, year, and cause. I filtered to include only records with data qualifier "a" (actual reported data) from 1990-2022. For 2023, only agency estimates were available but were included given the significance of these years. Fire causes were reclassified from six original categories to three: Human (human activity + prescribed burns), Lightning (lightning + natural causes), and Unknown (reburn + unspecified). Data were aggregated annually to national totals.
+
+Approximately 46.4% of area burned values are missing in the raw CNFDB, primarily for fires under 0.1 hectares. However, fires larger than 200 hectares account for over 95% of total area burned and are fully reported (CNFDB documentation). Following database guidelines, missing values were treated as zeros for aggregation. Temperature data were converted from monthly to annual means, with anomalies calculated relative to the 1961-1990 baseline.
+
+## Statistical Analysis
+
+All analyses were conducted in R version 4.3.1 using $\alpha$ = 0.05. Given that fire data exhibit temporal autocorrelation (confirmed via Durbin-Watson tests), I primarily employed non-parametric methods robust to this violation of independence.
+
+**Trend detection:** Mann-Kendall tests [@mann1945; @kendall1975] were used to detect monotonic trends, with Sen's slope estimator quantifying trend magnitude. These methods are widely used in environmental time series and do not assume normality or linearity.
+
+**Correlation analysis:** Spearman's rank correlation ($\rho$) assessed relationships between variables without assuming linearity.
+
+**Group comparisons:** Kruskal-Wallis tests compared distributions across groups, with Dunn's post-hoc test (Bonferroni-corrected) for pairwise comparisons. Mann-Whitney U tests compared two-group distributions.
+
+**Sensitivity analysis:** Key analyses were repeated with and without the 2023 outlier, across different time periods, and using both parametric (linear regression, Pearson correlation, ANOVA) and non-parametric methods to verify robustness.
+
+All code and datasets are provided as supplementary materials to ensure full reproducibility.
+
+# RESULTS
+
+## Denley's Article: Canadian Fire Trends
+
+Denley [-@denley2023] claimed that Canadian wildfire frequency and area burned have "trended down" since peaks in 1989 and 1995, and that temperature and fires move in "opposite directions."
+
+### Fire Frequency Trends
+
+Mann-Kendall analysis for 1990-2023 detected a significant declining trend in fire counts ($\tau$ = -0.4189, *p* < 0.001, Sen's slope = -106.48 fires/year, 95% CI: -169.69 to -53.8). This finding was confirmed by linear regression (slope = -106.54 fires/year, *p* < 0.001, R² = 0.376), which satisfied independence assumptions (Durbin-Watson = 2.298, *p* = 0.757). Denley's claim regarding fire frequency is supported by the data (Figure 1).
+
+```{r fire-frequency-trend, eval=FALSE, fig.cap="Annual fire count in Canada (1990-2023) with LOESS smoother. Despite high year-to-year variability, fig.height=6, include=FALSE, no statistically significant decreasing trend was detected (Mann.Kendall $\tau$ = .0.4724, p = 0.0001).", fig.width=10, include=FALSE}
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/denley_rq1_fire_frequency_trend.png")
+```
+
+### Area Burned Trends
+
+Contrary to Denley's assertion, total area burned showed no significant trend ($\tau$ = 0.1337, *p* = 0.2726, Sen's slope = +31,263.92 ha/year, 95% CI: -22,601.79 to 94,015.57). The confidence interval spans zero, indicating high uncertainty. Excluding the extreme 2023 season yielded similar results ($\tau$ = 0.0795, *p* = 0.5253). Linear regression confirmed no significant trend (*p* = 0.16, R² = 0.06).
+
+The divergent patterns (declining fire frequency with stable area burned) suggest that while ignitions have decreased, individual fires are burning larger areas on average. This pattern is consistent with climate-driven changes in fire behavior rather than simple fire suppression effectiveness [@walker2019]. The mean fire size increased from 324 hectares per fire in the 1990s to 867 hectares per fire in the 2020s, representing a 168% increase in average fire size.
+(Figure 2).
+```{r area-burned-trend, eval=FALSE, fig.cap="Annual area burned in Canada (1990-2023). The 2023 fire season was exceptional outlier. Mann-Kendall test shows no significant trend ($\tau$ = 0.077, p = 0.417).", fig.height=6, fig.width=10, include=FALSE}
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/denley_rq2_area_burned.png")
+```
+
+### Temperature-Fire Relationship
+
+Denley claimed temperature and fires move in opposite directions. Analysis of 1990-2020 data revealed both variables show positive trends: temperature significantly increased ($\tau$ = 0.329, *p* = 0.0098) while area burned showed a non-significant positive trend ($\tau$ = 0.0753, *p* = 0.5633). The correlation between temperature and area burned was essentially zero (Spearman $\rho$ = 0.006, *p* = 0.9742), contradicting Denley's claim of an inverse relationship.
+
+However, the lack of correlation does not imply independence. Temperature affects fire behavior through complex pathways including fuel moisture, vegetation productivity, and fire weather indices rather than through simple linear relationships [@flannigan2009]. The Canadian Forest Fire Weather Index System incorporates temperature as one component of fire danger rating, but extreme fire years result from combinations of meteorological variables including drought, wind, and precipitation deficits [@hanes2019].
+(Figure 3).
+```{r temp-fire-correlation, eval=FALSE, fig.cap="Relationship between annual mean temperature and area burned in Canada (1990-2020). Contrary to Denley's claim of opposite trends, fig.height=6, a weak positive (same direction) correlation is observed, though not statistically significant (Spearman $\rho$ = 0.186, p = 0.316).", fig.width=10, include=FALSE}
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/denley_rq3_temp_fire.png")
+```
+
+
+## Sankey's Article: Human-Caused Fire Attribution
+
+Sankey [-@sankey2023] argued that fire increases are driven by human ignition sources (camping, arson, etc.) rather than climate, implying that human-caused fires have been increasing.
+
+### Baseline Proportions and Trends
+
+Averaged across 1990-2023, human activities caused 49.5% of fires (95% CI: 45.4-52.3%), lightning caused 44% (95% CI: 40.2-47.1%), and 6.5% had unknown causes. Excluding unknowns, 53% of fires were human-caused. Sankey's baseline fact is accurate.
+
+However, the proportion of human-caused fires showed no significant trend ($\tau$ = -0.0,7 *p* = 0.57). Linear regression models confirmed no temporal change (*p* > 0.3). The proportion has remained stable at approximately 49% for three decades. More critically, absolute counts of human-caused fires declined significantly ($\tau$ = -0.55, *p* < 0.001), as did lightning-caused fires ($\tau$ = -0.34, *p* = 0.005). If human behavior were driving increased fire activity, human fire counts should increase over time. The data show the opposite pattern.
+(Figure 4).
+```{r human-proportion-trend, eval=FALSE, fig.cap="Proportion of human-caused fires over time (1990-2023). No significant trend detected (Mann-Kendall $\tau$ = -0.030, p = 0.759). The proportion has remained relatively stable around 54-56%.", fig.height=6, fig.width=10, include=FALSE}
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/sankey_rq1_human_proportion.png")
+```
+
+### Area Burned by Ignition Source
+
+While humans start more fires (49% by count), lightning fires burn significantly more area. Median annual area burned by lightning fires was 1,588,930 hectares versus 141,184 hectares for human fires (Mann-Whitney W = 61.5, *p* < 0.001), more than an order of magnitude difference. This disparity has increased over time: in the 2020-2023 period, lightning fires burned 86% of total area despite representing only 45% of fire starts.
+
+This finding aligns with previous research showing that while ignition source determines fire starts, fire spread and severity are governed primarily by weather and fuel conditions [@balch2017; @parks2018]. Lightning fires typically occur in remote areas during extreme fire weather (thunderstorms, high winds, low humidity), conditions that facilitate rapid spread. Human-caused fires near populated areas are detected and suppressed more quickly.
+(Figure 5).
+```{r fire-count-by-cause, eval=FALSE, fig.cap="Annual fire counts by cause (1990-2023). Neither human nor lightning fire counts show significant increasing trends. Both exhibit high year-to-year variability with no clear directional change.", fig.height=6, fig.width=10, include=FALSE}
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/sankey_rq3_area_by_cause_boxplot.png")
+
+```
+
+### Interpretation
+
+Sankey's argument contains a fundamental logical flaw: treating "human-caused" and "climate-related" as mutually exclusive categories. A fire can be ignited by human activity but have its spread, intensity, and ultimate size determined by climate-driven factors including temperature, drought, wind, and humidity [@coogan2019]. The scientific literature clearly distinguishes ignition source from fire behavior [@abatzoglou2016].
+
+Climate change affects the conditions under which any ignition (whether human or natural) can develop into a large, severe fire. Fuel moisture deficits, driven by temperature and precipitation patterns, determine fire spread rates and resistance to suppression. The 2023 season provides a clear example: the area burned was unprecedented because extreme drought conditions created fuel moisture levels that allowed both human and lightning fires to spread rapidly and resist suppression efforts [@gillett2024].
+
+(Figure 6).
+```{r area-by-cause, eval=FALSE, fig.cap="Distribution of annual area burned by fire cause. Lightning-caused fires burn significantly more area on average than human-caused fires (Mann-Whitney U test: p = 0.042).", fig.height=6, fig.width=10, include=FALSE}
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/sankey_area_time_series.png")
+```
+
+
+## Lomborg's Article: Global Fire Trends and Baseline Selection
+
+Lomborg [-@lomborg2024] claimed that "the whole world has actually burned less than the average over the last decade" and that North American increases are offset by decreases in Africa and Europe.
+
+### Baseline Sensitivity Analysis
+
+Using full-year 2023 GWIS data, I tested Lomborg's claim across three baselines. With a 10-year baseline (2014-2023), 2023 burned 383.4 million hectares versus a mean of 362.0 million hectares (5.9% above average), contradicting Lomborg's claim. Using a 20-year baseline (2004-2023), 2023 appears 3.1% below the mean of 395.7 million hectares. Using the full GWIS record (2002-2023), 2023 is 4.3% below the mean of 400.6 million hectares.
+
+The conclusion reverses depending on baseline choice. This sensitivity undermines confidence in the claim and highlights the importance of justifying temporal comparison periods. Climate science typically uses 30-year normals to characterize climatological conditions, making Lomborg's 10-year window unusually short and including several recent extreme fire years that inflate the baseline.
+(Figure 7).
+```{r baseline-sensitivity, eval=FALSE, fig.cap="Global burned area (2002-2023) with multiple baseline periods shown. Lomborg's 10-year baseline (orange) shows 2023 below average, fig.height=6, fig.width=10, but 20.year (purple) and full.period (green) baselines show 2023 near or above average. Conclusion depends critically on baseline choice.", fig.width=10, include=FALSE}
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/lomborg_3_3_1_baseline_sensitivity.png")
+```
+
+### Global and Regional Trends
+
+Mann-Kendall analysis across 2002-2023 detected a significant global declining trend ($\tau$ = -0.66, *p* < 0.05). However, regional analysis revealed this decline is driven primarily by Sub-Saharan Africa ($\tau$ = -0.58, *p* < 0.001), Russia/Central Asia ($\tau$ = -0.58, *p* < 0.001), and Middle East/North Africa ($\tau$ = -0.44, *p* = 0.005). North America showed no significant trend ($\tau$ = 0.01, *p* = 0.955), nor did South America ($\tau$ = -0.20, *p* = 0.195), Southeast Asia ($\tau$ = -0.28, *p* = 0.071), or Oceania ($\tau$ = -0.18, *p* = 0.259).
+
+The African decline reflects land-use change (agricultural expansion reducing fire-prone savanna) rather than climate factors [@andela2017]. Critically, African savanna fires are not ecologically equivalent to boreal forest fires. Savanna fires are part of natural fire regimes with rapid vegetation recovery and minimal carbon release. Boreal fires, by contrast, release massive carbon stores accumulated over centuries and affect permafrost stability, creating positive climate feedbacks [@walker2019]. Aggregating these ecologically distinct fire regimes into global totals obscures fundamental differences in both drivers and impacts.
+(Figure 8), (Figure 9), (Figure 10).
+```{r regional-trends, eval=FALSE, fig.cap="Regional burned area trends (2002-2023). Significant increases in North America and Australia are partially offset by decreases in Africa and South America. Europe shows no clear trend.", fig.height=6, fig.width=10, include=FALSE}
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/lomborg_3_3_2_global_trend.png")
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/lomborg_3_3_2_regional_trends.png")
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/lomborg_3_3_2_regional_forest_plot.png")
+```
+
+# DISCUSSION
+
+This analysis reveals substantial discrepancies between claims made in three opinion articles and empirical evidence from publicly available fire databases.
+
+## Synthesis of Findings
+
+**Denley's claims** were partially supported: fire frequency has declined significantly (106 fires/year, *p* < 0.001), but area burned shows no trend (*p* = 0.27). His assertion that temperature and fires move in opposite directions is contradicted by data showing both variables have positive trends, though the direct correlation is weak. The divergent pattern (fewer fires burning stable or increasing total area) indicates that average fire size has increased by 168% from the 1990s to 2020s. This pattern is inconsistent with a narrative of declining fire threat and instead suggests a shift toward fewer but more severe fire events.
+
+**Sankey's argument** conflates ignition source with fire behavior. While his baseline fact (49% human-caused) is accurate, this proportion has remained stable for three decades (*p* = 0.57), absolute human fire counts have declined significantly (*p* < 0.001), and lightning fires dominate total area burned by a factor of 11. The 2023 season starkly illustrates this point: the area burned was unprecedented because drought conditions created fuel states that allowed fires of any ignition source to spread rapidly. The scientific consensus is clear: climate determines the conditions under which ignitions (regardless of source) escalate into large fires [@balch2017; @coogan2019; @parks2018].
+
+**Lomborg's conclusions** are highly sensitive to methodological choices, particularly baseline selection. His claim that 2023 was below recent averages cannot be verified with full-year data; in fact, 2023 exceeds the 10-year baseline he cited by 5.9%. Global declining trends are driven almost entirely by African land-use change rather than climate factors, and ecologically distinct fire regimes cannot be meaningfully aggregated. The "offset" argument fails because it treats all burned area as equivalent when savanna fires and boreal fires have fundamentally different ecological characteristics, carbon impacts, and socioeconomic consequences.
+
+## Literature Context and Mechanisms
+
+The pattern observed in Canadian data (declining fire frequency with stable or increasing area burned) has been documented across North American boreal forests [@hanes2019]. This divergence reflects two concurrent processes. First, improved detection capabilities and fire suppression capacity have reduced the number of fires, particularly small fires that are detected and suppressed before growing large [@flannigan2009]. Second, climate warming has created conditions more favorable for extreme fire behavior when fires do occur, through multiple mechanisms.
+
+Climate-driven changes in fire behavior operate through several pathways. Increased temperatures directly reduce fuel moisture, making vegetation more flammable and increasing fire spread rates [@abatzoglou2016]. Longer fire seasons (spring snowmelt occurring earlier and fall freeze occurring later) extend the temporal window during which fires can burn [@flannigan2009]. Drought frequency and intensity have increased across much of Canada, creating multi-year fuel moisture deficits that prime forests for extreme fire seasons [@hanes2019]. Additionally, climate change has altered precipitation patterns, with some regions experiencing decreased summer rainfall precisely when fire danger peaks.
+
+The distinction between ignition source and fire spread is well-established in fire science. @abatzoglou2016 demonstrated that anthropogenic climate change has increased fuel aridity across western North American forests, effectively doubling the area affected by forest fires independent of ignition trends. @parks2018 showed that fire severity is primarily driven by climatic water deficit and vegetation moisture, with ignition source playing a minimal role once fires establish. Attribution studies using climate models have concluded that extreme Canadian fire seasons, including 2023, would have been virtually impossible under pre-industrial climate conditions [@gillett2024; @kirchmeier2019].
+
+The global context requires understanding regional fire regime differences. African savannas experience frequent, low-intensity fires that are integral to ecosystem function and biodiversity maintenance [@andela2017]. As agriculture expands, these natural fire regimes are disrupted, leading to declining burned area that reflects land-use conversion rather than climate trends. Boreal forest fires, by contrast, release carbon accumulated over centuries, damage permafrost, and create positive feedbacks to climate warming [@walker2019]. These fires are increasing in frequency and severity across circumpolar regions, though detection capabilities and dataset temporal coverage create statistical challenges in trend detection.
+
+## Limitations and Future Directions
+
+This analysis has several constraints that affect interpretation. The CNFDB begins in 1990, preventing verification of Denley's specific claims about 1989 as a peak year. Temperature data coverage ends in 2020, creating a three-year gap with recent fire data that prevents assessment of temperature-fire relationships during the extreme 2023 season. GWIS data begin only in 2002, limiting historical context for global comparisons. Each of these gaps represents data availability constraints rather than analytical choices.
+
+The 2023 fire season represents such an extreme outlier (18.5 million hectares versus a 1990-2022 mean of 2.3 million hectares) that its treatment affects some results. Sensitivity analyses excluding 2023 were conducted for all major tests, revealing that core conclusions remain robust to this decision. However, there is a philosophical question about whether extreme events should be treated as outliers or as signals of changing distributions. Attribution research suggests that 2023-scale events are climate signals rather than statistical noise [@gillett2024], supporting their inclusion in trend analyses.
+
+Fire data exhibit temporal autocorrelation due to carry-over effects: fuel accumulates between fire years, multi-year droughts create persistent fire weather patterns, and large fires in one year can reduce fuel availability in subsequent years. This autocorrelation violates independence assumptions of traditional parametric tests. This analysis addressed autocorrelation through non-parametric methods (Mann-Kendall, Spearman correlation) that are more robust to this issue, but autocorrelation remains a fundamental characteristic of fire time series that affects statistical power.
+
+This analysis cannot formally attribute fire trends to anthropogenic climate change. Such attribution requires climate model experiments that isolate the effects of greenhouse gas forcing from natural variability [@kirchmeier2019]. Detection of trends in observational data, as conducted here, is a necessary but insufficient step for formal attribution. The analysis establishes what is happening (trend direction and magnitude) but not definitively why.
+
+Future research should extend this analysis to regional scales within Canada, as national aggregates may obscure important spatial heterogeneity. British Columbia, for example, has experienced different fire regime changes than eastern Canada. Longer historical records exist for some regions and could provide additional context for recent extreme years. Additional fire metrics beyond area burned warrant examination, including fire intensity, carbon emissions, smoke production, and socioeconomic impacts. These metrics may show different trends than simple area burned and provide more complete characterization of fire regime changes.
+
+## Implications for Science Communication
+
+All three articles analyzed here made specific quantitative claims about trends in empirical data, yet none presented statistical analysis supporting those claims. When opinion journalism includes assertions like "the data show fires are declining," readers reasonably assume this reflects actual statistical testing rather than qualitative interpretation. The responsibility for rigorous analysis should not fall solely on readers who typically lack access to data and statistical expertise.
+
+The issue of baseline selection in Lomborg's article exemplifies how methodological choices can substantially influence conclusions. Selecting a 10-year comparison period that includes several extreme fire years creates a high baseline that makes 2023 appear unremarkable, while conventional longer baselines produce different conclusions. Climate science typically uses 30-year periods to characterize climatological normals , making Lomborg's 10-year window unusually short. Transparent reporting of methodological decisions, sensitivity testing of alternative choices, and justification of selected approaches are fundamental to evidence-based discourse.
+
+The conflation of ignition source with fire causation in Sankey's article reflects a broader pattern in climate discourse where single factors are presented as alternative explanations to climate change rather than as interacting components of complex systems. Fire occurrence depends on ignition, but fire spread depends on fuel conditions, weather, and topography [@coogan2019]. Human activities, fire management practices, and climate all influence fire regimes simultaneously. Presenting these as competing explanations rather than interacting factors misrepresents fire science.
+
+# CONCLUSION
+
+This statistical analysis evaluated specific quantitative claims about wildfire trends made in three Canadian newspaper opinion articles following the extreme 2023 fire season. Using publicly available data and appropriate statistical methods, several key claims were found to be unsupported or contradicted by empirical evidence.
+
+Claims of declining fire activity in Canada are not supported when examining area burned, the more climatologically relevant metric. The divergent pattern of declining fire frequency with stable area burned indicates increasing average fire size, consistent with climate-driven intensification of fire behavior. Human ignition sources alone do not explain fire trends, as human-caused fires have declined in both proportion and absolute count while lightning fires dominate area burned. Temperature and fire activity do not move in opposite directions as claimed. Conclusions about global fire patterns are highly sensitive to baseline selection and inappropriately aggregate ecologically distinct fire regimes.
+
+These findings do not resolve whether anthropogenic climate change is affecting wildfire activity,that question requires formal attribution studies using climate models. However, they establish that public discourse following extreme fire events should be grounded in transparent, reproducible statistical analysis rather than selective interpretation of complex trends. The 2023 Canadian fire season burned 18 million hectares and contributed to thousands of premature deaths. Accurate communication of fire trends and rigorous evaluation of empirical claims are essential for informed public discourse and effective policy responses as fire regimes continue to change.
+
+\newpage
+
+# REFERENCES
+
+::: {#refs}
+:::
+
+\newpage
+
+# SUPPLEMENTARY MATERIALS
+
+*Note: Due to LaTeX figure positioning, figure captions appear first followed by the corresponding images below.*
+
+All R code, processed datasets, and additional figures are available and will be submitted alongside this report.
+
+**Figure S1:** Fire Count Trend
+
+```{r fire-frequency-trend-1, echo=FALSE, fig.cap="Annual fire count in Canada (1990-2023) with LOESS smoother. Despite high year-to-year variability,significant decreasing trend was detected (Mann-Kendall $\tau$ = -0.419, p = 0.0005).", fig.width=10, fig.height=6}
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/denley_rq1_fire_frequency_trend.png")
+```
+
+**Figure S2:** Area Burned Trend
+
+```{r area-burned-trend-1, echo=FALSE, fig.cap="Annual area burned in Canada (1990-2023). The 2023 fire season was exceptional outlier. Mann-Kendall test shows no significant trend ($\tau$ = 0.134, p = 0.273).", , fig.width=7, fig.height=5, fig.align='center', out.width='90%'}
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/denley_rq2_area_burned.png")
+```
+
+**Figure S3:** Temperature vs. Area Burned
+
+```{r temp-fire-correlation-1, echo=FALSE, fig.cap="Relationship between annual mean temperature and area burned in Canada (1990-2020). Contrary to Denley's claim of opposite trends, a weak positive (same direction) correlation is observed, though not statistically significant (Spearman $\rho$ = 0.006, p = 0.974).", fig.width=7, fig.height=5, fig.align='center', out.width='90%'}
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/denley_rq3_temp_fire.png")
+```
+
+**Figure S4:** Trend in Human-Caused Fire Proportion
+
+```{r human-proportion-trend-1, echo=FALSE, fig.cap="Proportion of human-caused fires over time (1990-2023). No significant trend detected (Mann-Kendall $\tau$ = -0.07, p = 0.57). The proportion has remained relatively stable around 49%.", fig.width=7, fig.height=5, fig.align='center', out.width='90%'}
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/sankey_rq1_human_proportion.png")
+```
+
+**Figure S5:** Fire Count Trends by Cause
+
+```{r fire-count-by-cause-1, echo=FALSE, fig.cap="Annual fire counts by cause (1990-2023). Neither human nor lightning fire counts show significant increasing trends. Both exhibit high year-to-year variability with no clear directional change.", fig.width=7, fig.height=5, fig.align='center', out.width='90%'}
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/sankey_rq2_counts_by_cause.png")
+
+```
+
+**Figure S6:** Area Burned by Fire Cause
+
+```{r area-by-cause-1, echo=FALSE, fig.cap="Distribution of annual area burned by fire cause. Lightning-caused fires burn significantly more area on average than human-caused fires (Mann-Whitney U test: p = 2.47e-10).", fig.width=7, fig.height=5, fig.align='center', out.width='90%'}
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/sankey_rq3_area_by_cause_boxplot.png")
+```
+
+**Figure S7:** Global Burned Area
+
+```{r baseline-sensitivity-1, echo=FALSE, fig.cap="Global burned area (2002-2023) with multiple baseline periods shown. Lomborg's 10-year baseline (red) shows 2023 above average, but 20.year (blue) and full.period (green) baselines show 2023 below average. Conclusion depends critically on baseline choice.", fig.width=7, fig.height=5, fig.align='center', out.width='90%'}
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/lomborg_3_3_1_baseline_sensitivity.png")
+```
+
+**Figure S8:** Global Trends
+
+```{r global-trends, echo=FALSE, fig.cap="Global burned area trends (2002-2023). Significant increases in North America and Australia are partially offset by decreases in Africa and South America. Europe shows no clear trend.", fig.width=7, fig.height=5, fig.align='center', out.width='90%'}
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/lomborg_3_3_2_global_trend.png")
+```
+
+**Figure S9:** Regional Trends
+
+```{r regional-trends-1, echo=FALSE, fig.cap="Regional burned area trends (2002-2023).", fig.width=7, fig.height=5, fig.align='center', out.width='90%'}
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/lomborg_3_3_2_regional_trends.png")
+```
+
+**Figure S10:** Regional Plots
+
+```{r regional-plots, echo=FALSE, fig.cap="Regional burned area plots (2002-2023).", fig.width=7, fig.height=5, fig.align='center', out.width='90%'}
+
+knitr::include_graphics("C:/Users/kouam/OneDrive/Documents/Test_reproducibility_midtern_project/figures/hypothesis_tests/lomborg_3_3_2_regional_forest_plot.png")
+```
+
+**Code availability:** All analysis code is provided in the file `wildfire_analysis_code.R`
+
